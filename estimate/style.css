@@ -1,0 +1,71 @@
+body {
+	background-color: #F1F1F1;
+}
+
+h3 {
+	font-size: 20px;
+}
+
+th[scope="col"] ul {
+	display: inline-block;
+	padding: 0;
+	margin: 0;
+}
+
+th[scope="col"] ul li{
+	display: inline-block;
+	padding: 0;
+	margin: 0;
+}
+.tooltip > .tooltip-inner {
+	background-color: #F1F1F1;
+	color: #000;
+	margin-left: 10px;
+}
+
+input[type="number"] {
+	margin: 0;
+	padding: 0;
+	width: 100px;
+	text-align: center;
+}
+.table {
+	width: 70%;
+	margin: 5% 0 0 0;
+	float: left;
+}
+
+.summary {
+	width: 20%;
+	margin: 10% 5% 0 5%;
+	float: right;
+	text-align: center;
+}
+
+#myModal {
+	margin-top: 5%;
+}
+
+.without_ampm::-webkit-datetime-edit-ampm-field {
+	display: none;
+}
+
+input[type=time]::-webkit-clear-button {
+	-webkit-appearance: none;
+	-moz-appearance: none;
+	appearance: none;
+	margin: 0; 
+}
+
+.est-add {
+	text-align: center;
+}
+
+.est-add input[type="time"], input[type="text"], select {
+	width: 200px;
+}
+
+.est-add input[type="submit"] {
+	float: right;
+	margin-left: 15px;
+}
