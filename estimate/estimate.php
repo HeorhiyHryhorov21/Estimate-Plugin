@@ -225,7 +225,15 @@ class Estimate {
 		<table class="table table-striped"> 
 			<thead class="thead-dark">
 				<tr>
-				<th scope="col"><?php _e("Estimate:", 'est_domain') ?></th>  
+					<?php 
+						$est_sum = 0;
+						$args = array('post_type'=>'estimates');
+					        $postSelect = get_posts( $args );
+					        foreach ( $postSelect as $post ) {
+					        	++$est_sum;
+					        } 
+					?>
+				<th scope="col"><?php _e("Estimate: $est_sum", 'est_domain') ?></th>  
 				<th scope="col">
 					<ul>
 					<li><?php _e("Rate: ", 'est_domain');?></li>
