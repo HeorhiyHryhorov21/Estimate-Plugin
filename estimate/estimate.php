@@ -13,7 +13,10 @@ if(!defined("ABSPATH")) {
 
 class Estimate {
 	function __construct() {
-		add_action('admin_enqueue_scripts', array($this, 'est_add_scripts'));
+		if ( isset( $_GET['page'] ) && $_GET['page'] == 'estimate_menu_page') {
+  			add_action('admin_enqueue_scripts', array($this, 'est_add_scripts'));
+    	}
+    	
 		// Estimate
 		add_action('init', array($this, 'est_register_estimate'));
 		add_action('add_meta_boxes', array($this, 'est_add_fields_meta_box'));
@@ -23,15 +26,19 @@ class Estimate {
 		add_action('add_meta_boxes', array($this, 'est_add_presets_meta_box'));
 		add_action('save_post', array($this, 'est_save_presets_meta'));
 
+		add_action('init', array($this, 'add_preset'));
+		add_action('init', array($this, 'add_estimate'));
 		add_action('admin_menu', array($this, 'est_menu_page'));
-		add_action('admin_init', array($this, 'add_preset'));
 
 	}
 
 	function est_add_scripts() {
 		wp_enqueue_style('est-bootstrap-style', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css');
 		wp_enqueue_style('est-style', plugins_url().'/estimate/css/style.css');
-		wp_enqueue_script( 'bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js', array('jquery'), '3.3.4', true );
+		wp_enqueue_script( 'bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js', array('jquery'), '4.1.3', true );
+		wp_enqueue_script('bootstrap-poper-js', 'https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js');
+		wp_enqueue_script('est-js', plugins_url().'/estimate/js/main.js', array('jquery'), '4.1.3', true );
+		wp_enqueue_script('jquery', '4.1.3', true);
 	}
 
 	// Create Estimate CPT
@@ -177,7 +184,7 @@ class Estimate {
 					<?php esc_html_e('Pick a time', 'est_domain') ?>
 				</label>
 
-				<input type="time" name="time" id="time" value="<?php if(!empty($meta['time'])) echo esc_attr($meta['time'][0]);?>">
+				<input type="time" name="time" id="time" class="without_ampm" value="<?php if(!empty($meta['time'])) echo esc_attr($meta['time'][0]);?>">
 			</div>
 		</div>
 		<?php
@@ -211,117 +218,132 @@ class Estimate {
 		);
 	}
 
+	
+
 	function est_table() {
-		$args = array(
-			'post_type'		=> array('estimates', 'presets'),
-			'order'			=> 'DESC',
-		);
-
-		$getPost = new wp_query($args);
-		global $post;
-
 		?>
-		<table> 
+		<table class="table table-striped"> 
+			<thead class="thead-dark">
+				<tr>
+				<th scope="col"><?php _e("Estimate:", 'est_domain') ?></th>  
+				<th scope="col">
+					<ul>
+					<li><?php _e("Rate: ", 'est_domain');?></li>
+						<li><form action="" method="POST">
+							<a href="#" data-toggle="tooltip" data-placement="right" data-template='<div class="tooltip" role="tooltip"><div class="tooltip-inner"></div></div>' title="Add rate in $">
+								<input type="number" min="0" name="rate" id="rate" value="<?php echo $_POST['rate']; ?>">
+							</a>
+						</form>
+					</li>
+					</ul>
+				</th>
+					<th scope="col">
+					<button type="button" class="button button-primary" data-toggle="modal" data-target="#myModal"><?php _e('Add', 'est_domain') ?></button>
+				</th>
+				</tr>
+			</thead>
+			<tbody>
 			<tr> 
-				<th><h3><?php _e('Estimate', 'est_domain') ?></h3></th> 
-				<th><h3><?php _e('Rate: ', 'est_domain') ?></h3></th> 
-				<th>
-					<form action="" method="POST">
-						<input type="number" name="rate" id="rate" min="0" value="<?php echo $_POST['rate']; ?>">
-					</form>
+				<th scope="col">
+					<td><?php _e('Title', 'est_domain') ?></td> 
+					<td><?php _e('Time', 'est_domain')?></td>
 				</th>
 			</tr> 
-			<tr> 
-				<td><p><?php _e('Title', 'est_domain') ?></p></td> 
-				<td><p><?php _e('Time', 'est_domain')?></p></td>
-			</tr> 
-			<?php 
-			$postData = get_posts(array(
-				'order' 		=> 'DESC',
-				'post_type'		=> array('estimates', 'presets'),
+			<?php
+				$postData = get_posts(array(
+				'post_type'		=> 'estimates',
+				'order'			=> 'ASC',
+				'numberposts' 	=> -1,
 			));
-			foreach($postData as $post) : ?>
+
+			$est_count = 1;
+			foreach($postData as $post) : setup_postdata($post)?>
 				<tr>
+					<th scope="col"><?php echo $est_count;?>
 					<td>
 						<p><?php _e($post->post_title, 'est_domain'); ?></p>
-						<hr>
 					</td>
 					<td>
 						<?php
 						echo '<p>' . get_post_meta($post->ID, 'time', true) . '</p>';
 						$est_time += (int)get_post_meta($post->ID, 'time', true);
+						++$est_count;
 						?>
-						<hr>
 					</td>
+				</th>
 				</tr>
 				<?php
+			wp_reset_postdata();
 			endforeach;
 			?>
-			<tr>
-				<td colspan="2"></td>
-				<td>
-					<div class="container">
-  <!-- Trigger the modal with a button -->
-  <button type="button" class="btn btn-info btn-lg" data-toggle="modal" data-target="#myModal"><?php _e('Add', 'est_domain') ?></button>
-
-  <!-- Modal -->
-  <div class="modal fade" id="myModal" role="dialog">
-    <div class="modal-dialog">
-    
-      <!-- Modal content-->
-      <div class="modal-content">
-        <div class="modal-header">
-        	<h3><?php _e('Add Preset Form', 'est_domain') ?></h3>
-          <button type="button" class="close" data-dismiss="modal">&times;</button>
-        </div>
-        <div class="modal-body">
-        	<div class="form-group">
-          	<form action="" method="POST">
-          		<label for="title"><?php _e('Title: ', 'est_domain') ?></label>
-          		<input type="text" name="prst_title" id="prst_title"><br><br>
-          		<label for="time">
-					<?php esc_html_e('Pick a time', 'est_domain') ?>
-				</label>
-				<input type="time" name="prst_time" id="prst_time"><br><br>
-				<?php wp_nonce_field('est_form', 'est_nonce_field');?>
-          		<input type="submit" name="submit" value="<?php _e('Add', 'est_domain') ?>"><br><br>
-          	</form>
-          </div>
-        </div>
-    </div>
-  </div>
-  
-</div>
-				</td>
-
-			</tr>
-			<tr>
-				<td colspan="1"><h3><?php _e('Summary:', 'est_domain') ?></h3></td>
-			</tr>
-			<tr>
-				<td>
+			
+	</tbody>
+</table>
+		<div class="summary card">
+			<div class="card-body">
+				<h3><?php _e('Summary:', 'est_domain') ?></h3>
 					<p>
 						<ul>
 							<li>
 								<?php echo '<h3>' . $est_time . ' hours' . '</h3>'; ?>
 								<?php
-								if(isset($_POST['rate'])){
 									echo '<h3>' . $est_time * $_POST['rate'] . ' $' . '</h3>';
-								}
 								?>
 							</li>
 						</ul>
 					</p>
-				</td>
-			</tr>
-		</table>
+				</div>
+			</div>
+			<div class="container">
+					  <!-- Modal -->
+					  <div class="modal fade" id="myModal" role="dialog">
+					    <div class="modal-dialog">
+					    
+					      <!-- Modal content-->
+					      <div class="modal-content">
+					        <div class="modal-header">
+					        	<h3><?php _e('Add Preset Form', 'est_domain') ?></h3>
+					          <button type="button" class="close" data-dismiss="modal">&times;</button>
+					        </div>
+					        <div class="modal-body">
+					        	<div class="form-group est-add">
+					          	<form action="" method="POST">
+									<label for="prst_select">Presets</label><br>
+					          		<select name="prst_select" id="prst_select">
+					          			 <?php
+					                        $args = array('post_type'=>'presets');
+					                        $postSelect = get_posts( $args );
+					                        foreach ( $postSelect as $post ) : ?>
+					                            <option><?php echo $post->post_title; ?></option>
+					                        <?php endforeach; 
+					          			?>
+					          		</select><br><br>
+					          		<p>OR</p>
+					          		<label for="prst_title"><?php _e('Title: ', 'est_domain') ?></label><br>
+					          		<input type="text" name="prst_title" id="prst_title"><br><br>
+					          		<label for="prst_time">
+										<?php esc_html_e('Time: ', 'est_domain') ?>
+									</label><br>
+									<input type="time" name="prst_time" id="prst_time" class="without_ampm"><br><br>
+									<?php wp_nonce_field('est_form', 'est_nonce_field');?>
+									<input type="submit" class="button button-primary" name="add_save" value="<?php _e('Add and Save', 'est_domain') ?>">
+									<input type="submit" class="button button-primary" name="add" value="<?php _e('Add', 'est_domain') ?>">
+					          	</form>
+					          </div>
+					        </div>
+					    </div>
+					  </div>
+					  
+					</div>
+				</div>
+
 		<?php 
 	
 	}
 
 	function add_preset() {
-				// Form validation
-			if(isset($_POST['est_nonce_field']) && wp_verify_nonce($_POST['est_nonce_field'], 'est_form')) {
+			// Form validation
+			if(isset($_POST['add_save']) && isset($_POST['est_nonce_field']) && wp_verify_nonce($_POST['est_nonce_field'], 'est_form')) {
 				$post_information = array(
 					'post_title' 		=> wp_strip_all_tags( $_POST['prst_title'] ),
 					'post_type' 		=> 'presets',
@@ -331,6 +353,32 @@ class Estimate {
 				$prst_id = wp_insert_post($post_information);
 
 				update_post_meta($prst_id, 'time', $_POST['prst_time']);
+
+				$post_information = array(
+					'post_title' 		=> wp_strip_all_tags( $_POST['prst_title'] ),
+					'post_type' 		=> 'estimates',
+					'post_status' 		=> 'publish'
+				);
+
+				$prst_id = wp_insert_post($post_information);
+
+				update_post_meta($prst_id, 'time', $_POST['prst_time']);
+			}
+		}
+
+		function add_estimate() {
+				// Form validation
+			if(isset($_POST['add']) && isset($_POST['est_nonce_field']) && wp_verify_nonce($_POST['est_nonce_field'], 'est_form')) {
+				$presetInfo = get_page_by_title( $_POST['prst_select'], OBJECT, $post_type = 'presets' );
+				$post_information = array(
+					'post_title' 		=> wp_strip_all_tags( $_POST['prst_select'] ),
+					'post_type' 		=> 'estimates',
+					'post_status' 		=> 'publish'
+				);
+
+				$prst_id = wp_insert_post($post_information);
+
+				update_post_meta($prst_id, 'time', get_post_meta($presetInfo->ID, 'time', true));
 			}
 		}
 }
