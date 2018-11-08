@@ -20,6 +20,7 @@ th[scope="col"] ul li{
 .tooltip > .tooltip-inner {
 	background-color: #F1F1F1;
 	color: #000;
+	margin-left: 10px;
 }
 
 input[type="number"] {
