@@ -45,16 +45,25 @@ input[type="number"] {
 #myModal {
 	margin-top: 5%;
 }
+.modal-content {
+    height: 70%;
+}   
 
-.without_ampm::-webkit-datetime-edit-ampm-field {
+.modal-dialog {
+ 	height: 600px !important;
+}
+
+input#add {
 	display: none;
 }
 
-input[type=time]::-webkit-clear-button {
-	-webkit-appearance: none;
-	-moz-appearance: none;
-	appearance: none;
+input[type=time] {
 	margin: 0; 
+}
+
+.timepicker {
+	width: 200px;
+	margin: 0 auto;
 }
 
 .est-add {
