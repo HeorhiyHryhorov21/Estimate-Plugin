@@ -17,6 +17,9 @@ class Estimate {
   			add_action('admin_enqueue_scripts', array($this, 'est_add_scripts'));
     	}
     	
+    	if ( isset($_GET['post'])) {
+    		add_action('admin_enqueue_scripts', array($this, 'est_add_post_scripts'));
+    	}
 		// Estimate
 		add_action('init', array($this, 'est_register_estimate'));
 		add_action('add_meta_boxes', array($this, 'est_add_fields_meta_box'));
@@ -26,20 +29,32 @@ class Estimate {
 		add_action('add_meta_boxes', array($this, 'est_add_presets_meta_box'));
 		add_action('save_post', array($this, 'est_save_presets_meta'));
 
-		add_action('init', array($this, 'add_preset'));
-		add_action('init', array($this, 'add_estimate'));
-		add_action('admin_menu', array($this, 'est_menu_page'));
+		add_action('wp_ajax_add_save_preset', array($this, 'add_save_preset'));
+		add_action('wp_ajax_nopriv_add_save_preset', array($this, 'add_save_preset'));
 
+		add_action('wp_ajax_add_estimate', array($this, 'add_estimate'));
+		add_action('wp_ajax_nopriv_add_estimate', array($this, 'add_estimate'));
+
+		add_action('admin_menu', array($this, 'est_menu_page'));
+		add_action('admin_head', array($this, 'custom_js_to_head'));
 	}
 
 	function est_add_scripts() {
-		wp_enqueue_style('est-bootstrap-style', 'https://stackpath.bootstrapcdn.com/bootstrap/4.1.3/css/bootstrap.min.css');
+		wp_enqueue_style('est-bootstrap-style', plugins_url().'/estimate/css/bootstrap.css');
 		wp_enqueue_style('timepicker-css', plugins_url().'/estimate/css/bootstrap-timepicker.min.css');
 		wp_enqueue_style('est-style', plugins_url().'/estimate/css/style.css');
-		wp_enqueue_script( 'bootstrap-js', 'https://maxcdn.bootstrapcdn.com/bootstrap/4.1.3/js/bootstrap.min.js', array('jquery'), '4.1.3', true );
+		wp_enqueue_script( 'bootstrap-js', plugins_url().'/estimate/js/bootstrap.js', array('jquery'), '4.1.3', true );
 		wp_enqueue_script('bootstrap-poper-js', 'https://cdnjs.cloudflare.com/ajax/libs/popper.js/1.12.9/umd/popper.min.js');
 		wp_enqueue_script('timepicker-js', plugins_url().'/estimate/js/bootstrap-timepicker.min.js');
-		wp_enqueue_script('est-js', plugins_url().'/estimate/js/main.js', array('jquery'), '4.1.3', true );
+		wp_register_script('est-js', plugins_url().'/estimate/js/main.js', array('jquery'), '4.1.3', true );
+		wp_localize_script('est-js', 'js_object', array('ajax_url' => admin_url('admin-ajax.php')));
+		wp_enqueue_script('est-js');
+	}
+
+	function est_add_post_scripts() {
+		wp_enqueue_style('post-boostrap-css', plugins_url().'/estimate/css/bootstrap.css');
+		wp_enqueue_style('style-post', plugins_url().'/estimate/css/style-post.css');
+		wp_enqueue_script('post-boostrap-js', plugins_url().'/estimate/js/bootstrap.js', array('jquery'), '4.1.3', true);
 	}
 
 	// Create Estimate CPT
@@ -99,11 +114,33 @@ class Estimate {
 		$meta = get_post_meta($post->ID);?>
 		<div class="wrapper estimate-fields">
 			<div class="form-group">
-				<label for="text">
-					<?php esc_html_e('Id of preset', 'est_domain') ?>
-				</label>
-
-				<input type="text" name="text" id="text" class="without_ampm" value="<?php if(!empty($meta['text'])) echo esc_attr($meta['text'][0]);?>">
+				<p>
+					<label for="est_title">
+						<?php esc_html_e('Estimate Title', 'est_domain') ?>
+					</label>
+				
+					<input type="text" name="est_title" id="est_title" value="<?php if(!empty($meta['est_title'])) echo esc_attr($meta['est_title'][0]);?>">
+				
+					<label for="est_rate">
+						<?php esc_html_e('Rate', 'est_domain') ?>
+					</label>
+				
+				<input type="number" name="est_rate" id="est_rate" value="<?php if(!empty($meta['est_rate'])) echo esc_attr($meta['est_rate'][0]);?>">
+				</p>
+				<p>
+					<label for="est_items">
+							<?php esc_html_e('Items', 'est_domain') ?>
+					</label>
+				</p>
+				<table class="table table-striped" name="est_items" id="est_items">
+					<tr> 
+						<td>№</td>
+						<td><?php _e('Title', 'est_domain') ?></td> 
+						<td><?php _e('Time', 'est_domain')?></td>
+						<td></td>
+					</tr> 
+				<p class="table table-striped" name="est_items" id="est_items"><?php if(!empty($meta['est_items'])) echo $meta['est_items'][0];?></p>
+				</table>
 			</div>
 		</div>
 		<?php
@@ -118,8 +155,16 @@ class Estimate {
 			return;
 		}
 
-		if (isset($_POST['text'])) {
-			update_post_meta($post_id, 'text', sanitize_text_field($_POST['text']));
+		if (isset($_POST['est_rate'])) {
+			update_post_meta($post_id, 'est_rate', sanitize_text_field($_POST['est_rate']));
+		}
+
+		if (isset($_POST['est_title'])) {
+			update_post_meta($post_id, 'est_title', sanitize_text_field($_POST['est_title']));
+		}
+
+		if (isset($_POST['est_items'])) {
+			update_post_meta($post_id, 'est_items', sanitize_text_field($_POST['est_items']));
 		}
 
 	}
@@ -150,7 +195,7 @@ class Estimate {
 			'description' 		=> __('Presets custom posts', 'est_domain'),
 			'taxonomies' 		=> array('category'),
 			'public' 			=> true,
-			'show_in_menu' 		=> true,
+			'show_in_menu' 		=> false,
 			'menu_position' 	=> 6,
 			'menu_icon' 		=> 'dashicons-list-view',
 			'show_in_nav_menus' => true,
@@ -185,7 +230,7 @@ class Estimate {
 					<?php esc_html_e('Pick a time', 'est_domain') ?>
 				</label>
 
-				<input type="time" name="time" id="time" class="without_ampm" value="<?php if(!empty($meta['time'])) echo esc_attr($meta['time'][0]);?>">
+				<input type="time" name="time" id="time" value="<?php if(!empty($meta['time'])) echo esc_attr($meta['time'][0]);?>">
 			</div>
 		</div>
 		<?php
@@ -225,91 +270,47 @@ class Estimate {
 		?>
 		<table class="table table-striped"> 
 			<thead class="thead-dark">
-				<tr>
-					<?php 
-						$est_sum = 0;
-						$args = array('post_type'=>'estimates');
-					        $postSelect = get_posts( $args );
-					        foreach ( $postSelect as $post ) {
-					        	++$est_sum;
-					        } 
-					?>
-				<th scope="col"><?php _e("Estimate: $est_sum", 'est_domain') ?></th>  
+				<tr>		
+				<th scope="col"></th>
+				<th scope="col">
+					<ul>
+						<li>
+							<?php _e("Estimate: ", 'est_domain') ?>
+						</li>
+						<li>
+								<input type="text" name="est_title" id="est_title" placeholder="Add estimate title">
+						</li>
+					</ul>
+					</th>  
 				<th scope="col">
 					<ul>
 					<li><?php _e("Rate: ", 'est_domain');?></li>
-						<li><form action="" method="POST">
-							<a href="#" data-toggle="tooltip" data-placement="right" data-template='<div class="tooltip" role="tooltip"><div class="tooltip-inner"></div></div>' title="Press enter to add rate in $">
-								<input type="number" min="0" name="rate" id="rate" value="<?php echo $_POST['rate']; ?>">
+						<li>
+							<a href="#" data-toggle="tooltip" data-placement="top" data-template='<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' title="Press enter to add rate in $">
+								<input type="number" min="0" name="rate" id="rate">
 							</a>
-						</form>
+						
 					</li>
 					</ul>
-				</th>
 					<th scope="col">
-					<button type="button" class="button button-primary" data-toggle="modal" data-target="#myModal"><?php _e('Add', 'est_domain') ?></button>
+						<button type="button" class="button button-primary" data-toggle="modal" data-target="#add_prst_modal"><?php _e('Add Item', 'est_domain') ?></button>
+					</th>
 				</th>
 				</tr>
 			</thead>
 			<tbody>
-			<tr> 
-				<th scope="col">
-					<td><?php _e('Title', 'est_domain') ?></td> 
-					<td><?php _e('Time', 'est_domain')?></td>
-				</th>
-			</tr> 
-			<?php
-				$postData = get_posts(array(
-				'post_type'		=> 'estimates',
-				'order'			=> 'ASC',
-				'numberposts' 	=> -1,
-			));
-
-			$est_count = 1;
-			foreach($postData as $post) : 
-				setup_postdata($post);
-				$prst_id = get_post_meta($post->ID, 'text', true);
-				$prstData = get_post($prst_id, OBJECT);
-				?>
-				<tr>
-					<th scope="col"><?php echo $est_count;?>
-					<td>
-						<p><?php _e($prstData->post_title, 'est_domain'); ?></p>
-					</td>
-					<td>
-						<?php
-						echo '<p>' . get_post_meta($prstData->ID, 'time', true) . '</p>';
-						$est_time += (int)get_post_meta($prstData->ID, 'time', true);
-						++$est_count;
-						?>
-					</td>
-				</th>
-				</tr>
-				<?php
-			wp_reset_postdata();
-			endforeach;
-			?>
-			
+			<tr><td>№</td><td><?php _e('Title', 'est_domain') ?></td><td><?php _e('Time', 'est_domain')?></td><td></td></tr> 
 	</tbody>
+	<tfoot>
+			<tr>
+				<td colspan="3"></td>
+				<td><button type="submit" class="button button-primary" name="crt_est" id="crt_est">Create Estimate</button></td>
+			</tr>
+	</tfoot>
 </table>
-		<div class="summary card">
-			<div class="card-body">
-				<h3><?php _e('Summary:', 'est_domain') ?></h3>
-					<p>
-						<ul>
-							<li>
-								<?php echo '<h3>' . $est_time . ' hours' . '</h3>'; ?>
-								<?php
-									echo '<h3>' . $est_time * $_POST['rate'] . ' $' . '</h3>';
-								?>
-							</li>
-						</ul>
-					</p>
-				</div>
-			</div>
 			<div class="container">
 					  <!-- Modal -->
-					  <div class="modal fade" id="myModal" role="dialog">
+					  <div class="modal fade" id="add_prst_modal" role="dialog">
 					    <div class="modal-dialog">
 					    <div class="modal-dialog" role="document">
 					      <!-- Modal content-->
@@ -326,13 +327,16 @@ class Estimate {
 					          			 <?php
 					                        $args = array('post_type'=>'presets');
 					                        $postSelect = get_posts( $args );
-					                        foreach ( $postSelect as $post ) : ?>
-					                            <option><?php echo $post->post_title; ?></option>
+					                        foreach ( $postSelect as $post ) :
+					                        $prstData = get_post($post->ID, OBJECT); ?>
+					                            <option><?php echo $prstData->post_title; ?></option>
+					                            <option hidden name="prst_select_time"><?php echo get_post_meta($prstData->ID, 'time', true); ?></option>
 					                        <?php endforeach; 
 					          			?>
 					          		</select><br><br>
+
 					          		<div class="add_new_preset">
-					          		<p>OR</p>
+					          		
 						          		<label for="prst_title"><?php _e('Title: ', 'est_domain') ?></label><br>
 						          		<input type="text" name="prst_title" id="prst_title"><br><br>
 						          		<label for="prst_time">
@@ -344,7 +348,7 @@ class Estimate {
 							    	</div>
 									<?php wp_nonce_field('est_form', 'est_nonce_field');?>
 									<input type="submit" class="button button-primary" name="add" id="add" value="<?php _e('Add', 'est_domain') ?>">
-									<input type="submit" class="button button-primary" name="add_save" value="<?php _e('Add and Save', 'est_domain') ?>">
+									<input type="submit" class="button button-primary" name="add_save" id="add_save" value="<?php _e('Add and Save', 'est_domain') ?>">
 					          	</form>
 					          </div>
 					        </div>
@@ -353,14 +357,11 @@ class Estimate {
 					  </div>
 					</div>
 				</div>
-
 		<?php 
 	
 	}
 
-	function add_preset() {
-			// Form validation
-			if(isset($_POST['add_save']) && isset($_POST['est_nonce_field']) && wp_verify_nonce($_POST['est_nonce_field'], 'est_form')) {
+		function add_save_preset() {
 				$post_information = array(
 					'post_title' 		=> wp_strip_all_tags( $_POST['prst_title'] ),
 					'post_type' 		=> 'presets',
@@ -371,33 +372,43 @@ class Estimate {
 
 				update_post_meta($prst_id, 'time', $_POST['prst_time']);
 
+				die();
+			}
+		
+
+		function add_estimate() {
 				$post_information = array(
-					'post_title' 		=> wp_strip_all_tags( $_POST['prst_title'] ),
+					'post_title' 		=> wp_strip_all_tags( $_POST['est_title'] ),
 					'post_type' 		=> 'estimates',
 					'post_status' 		=> 'publish'
 				);
 
 				$est_id = wp_insert_post($post_information);
 
-				update_post_meta($est_id, 'text', $prst_id);
+				update_post_meta($est_id, 'est_title', $_POST['est_title']);
+				update_post_meta($est_id, 'est_rate', $_POST['est_rate']);
+				update_post_meta($est_id, 'est_items', $_POST['est_items']);
+				die();
 			}
-		}
 
-		function add_estimate() {
-				// Form validation
-			if(isset($_POST['add']) && isset($_POST['est_nonce_field']) && wp_verify_nonce($_POST['est_nonce_field'], 'est_form')) {
-				$presetInfo = get_page_by_title( $_POST['prst_select'], OBJECT, $post_type = 'presets' );
-				$post_information = array(
-					'post_title' 		=> wp_strip_all_tags( $_POST['prst_select'] ),
-					'post_type' 		=> 'estimates',
-					'post_status' 		=> 'publish'
-				);
-
-				$prst_id = wp_insert_post($post_information);
-
-				update_post_meta($prst_id, 'text', $presetInfo->ID);
-			}
-		}
+	function custom_js_to_head() {
+    ?>
+    <script>
+			    jQuery(function(){
+			        jQuery("body.post-type-estimates .row-actions").append(' | <span class="print"><a href="http://wordpress/wp-admin/post.php?post=716&amp;action=edit" aria-label="Edit &#8220;afdss&#8221;">Print</a>');
+			    });
+			    </script>
+    <?php
+}
+/*function custom_js_to_head() {
+		    ?>
+			    <script>
+			    jQuery(function(){
+			        jQuery("body.post-type-estimates .row-actions").append(' | <span class="print"><a href="http://wordpress/wp-admin/post.php?post=716&amp;action=edit" aria-label="Edit &#8220;afdss&#8221;">Print</a>');
+			    });
+			    </script>
+    		<?php
+		}*/
 }
 
 new Estimate();

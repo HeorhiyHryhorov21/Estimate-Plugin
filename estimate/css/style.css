@@ -12,45 +12,70 @@ th[scope="col"] ul {
 	margin: 0;
 }
 
+#estimate {
+	width: 100px;
+}
+
 th[scope="col"] ul li{
 	display: inline-block;
 	padding: 0;
 	margin: 0;
 }
-.tooltip > .tooltip-inner {
-	background-color: #F1F1F1;
-	color: #000;
-	margin-left: 10px;
+
+#number-col {
+	width: 2%;
 }
 
+.tooltip {
+	color: #fafafa;
+	margin-bottom: 20px;
+}
+
+.tooltip-inner {
+	background-color: #212529;
+}
+.button-modal {
+	display: inline;
+	margin: 0;
+	padding: 0;
+	margin-left: 200px;
+	margin-right: -200px;
+	
+}
 input[type="number"] {
 	margin: 0;
 	padding: 0;
 	width: 100px;
 	text-align: center;
 }
+.est_success {
+	position: absolute;
+	width: 92%;
+	margin: 0% 5% 0 3%;
+	background-color: #DFF0D8;
+	color: #3C763D;
+	padding: 0.75rem 1.25rem;
+  	margin-bottom: 1rem;
+  	border: 1px solid transparent;
+  	border-radius: 0.25rem;
+}
+
 .table {
-	width: 70%;
-	margin: 5% 0 0 0;
+	width: 92%;
+	margin: 5% 5% 0 3%;
 	float: left;
 }
 
-.summary {
-	width: 20%;
-	margin: 10% 5% 0 5%;
-	float: right;
-	text-align: center;
-}
 
-#myModal {
+#add_prst_modal {
 	margin-top: 5%;
 }
-.modal-content {
+#add_prst_modal .modal-content {
     height: 70%;
 }   
 
 .modal-dialog {
- 	height: 600px !important;
+ 	height: 500px !important;
 }
 
 input#add {
