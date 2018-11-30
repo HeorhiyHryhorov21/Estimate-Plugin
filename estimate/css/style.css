@@ -61,11 +61,17 @@ input[type="number"] {
 }
 
 .table {
-	width: 92%;
-	margin: 5% 5% 0 3%;
+	width: 70%;
+	margin: 5% 0 0 0%;
 	float: left;
 }
 
+.summary {
+	width: 20%;
+	margin: 10% 5% 0 5%;
+	float: right;
+	text-align: center;
+}
 
 #add_prst_modal {
 	margin-top: 5%;
