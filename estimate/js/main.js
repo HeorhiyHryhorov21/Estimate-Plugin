@@ -75,12 +75,10 @@ jQuery(document).ready(function() {
 		var i = 1;
 		for (i; i < count; ++i) {
 			var time = jQuery('tbody > tr').find('td#time'+i).text();
-			jQuery('tbody > tr').find('td#cost'+i).html(timeToFloat(time)*est_rate);
+			jQuery('tbody > tr').find('td#cost'+i).html(timeToFloat(time)*est_rate+' $');
 		}
 	}
 
-	var row_count = 1;
-	var input_change_count = 0;
 	jQuery('input#rate').change(function() {
 		var est_rate = jQuery('input#rate').val();
 		calcRate(est_rate);
@@ -101,10 +99,11 @@ jQuery(document).ready(function() {
 		}
 
 		if (jQuery('#prst_title').val() != '' && jQuery('#timepicker1').val() != '') {
-		jQuery('.table > tbody').append('<tr><td id="number-col">'+est_count+'</td><td><p>'+prst_title+'</p></td><td>'+prst_time+'</td><td>'+timeToFloat(prst_time)*est_rate+' $</td><td><p hidden>'+prst_time+'</p><span class="dashicons dashicons-trash"></span></td></tr>');
-
+		jQuery('.table > tbody').append('<tr><td id="number-col">'+est_count+'</td><td><p>'+prst_title+'</p></td><td id="time'+time_id+'">'+prst_time+'</td><td id="cost'+cost_id+'">'+timeToFloat(prst_time)*est_rate+' $</td><td><p hidden>'+prst_time+'</p><span class="dashicons dashicons-trash"></span></td></tr>');
+		++time_id;
+		++cost_id;
 		est_time_sum += timeToFloat(prst_time);
-		if (jQuery('.table.table-striped > tbody > tr').length >= 2) {
+		if (jQuery('.table.table-striped > tbody > tr').length >= 1) {
 			jQuery('h3#estimate_time_sum').text(est_time_sum + ' hours');
 			jQuery('h3#estimate_money_sum').text(est_time_sum*est_rate + ' $');
 		}	
@@ -140,12 +139,13 @@ jQuery(document).ready(function() {
 		} else {++est_count}
   	});
 
+
   	jQuery('#crt_est').click(function(e){
 		e.preventDefault();
 		var est_title = jQuery('#est_title').val();
 		var est_items = jQuery('.table.table-striped > tbody').html().trim();
 		var est_summary = jQuery('.summary.card > .card-body > ul').html().trim();
-		alert(est_summary);
+		var time_sum = jQuery('.summary.card > .card-body > ul > li > h3#estimate_time_sum').html().replace(' hours', '');
 		var est_rate = jQuery('input#rate').val();
 		est_items = est_items.replace(/<tr>[\s\S]*?<\/tr>/, '');
 		est_items = est_items.replace(/<span class="dashicons dashicons-trash">[\s\S]*?<\/span>/g, '');
@@ -154,13 +154,18 @@ jQuery(document).ready(function() {
 			est_title: est_title,
 			est_rate: est_rate,
 			est_items: est_items,
-			est_summary: est_summary
+			est_summary: est_summary,
+			time_sum: time_sum
 		}
      	jQuery.post(js_object.ajax_url, estimate, function(data) {
      		
      	});
 
      	jQuery('<div class="est_success">Estimate '+est_title+' was created</div>').insertBefore('.table').delay(3000).fadeOut();
+
+     	setTimeout(function(){
+        	location.reload();
+    	}, 3000);
   	});
 
 	

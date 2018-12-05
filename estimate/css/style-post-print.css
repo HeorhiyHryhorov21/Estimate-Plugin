@@ -1,0 +1,49 @@
+.summary.card {
+	width: 100%;
+	text-align: center;
+	list-style: none;
+	display: inline;
+	border: none;
+}
+
+.card-body {
+	color: #fafafa;
+	background-color: #23282D;
+}
+
+.summary-description {
+	width: 100%;
+	padding: 2% 0% 0% 2%;
+	display: block;
+	font-size: 20px;
+	font-family: 'Arial';
+	background-color: #23282D;
+	color: #fafafa;
+}
+
+.summary-display {
+	width: 60%;
+	margin: 0% 20% 0% 20%;
+	padding: 0% 5% 0% 5%;
+	display: inline;
+}
+.card-body h3 {
+	font-size: 20px;
+	display:inline-block;
+	text-align: center;
+}
+
+.card-body ul {
+	list-style: none;
+	display: inline-block;
+	background-color: #23282D;
+	text-align: center;
+}
+
+
+.card-body ul li{
+	text-align: center;
+	list-style: none;
+	padding-left: 10px;
+}
+

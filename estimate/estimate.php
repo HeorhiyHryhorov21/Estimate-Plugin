@@ -18,13 +18,16 @@ class Estimate {
   			add_action('admin_enqueue_scripts', array($this, 'est_add_scripts'));
     	}
     	add_action('admin_enqueue_scripts', array($this, 'est_add_post_scripts'));
-		// Estimate
 		add_action('init', array($this, 'est_register_estimate'));
 		add_action('add_meta_boxes', array($this, 'est_add_fields_meta_box'));
-		add_action('save_post', array($this, 'est_save_fields_meta'));
-		// Presets
+
 		add_action('init', array($this, 'est_register_preset'));
 		add_action('add_meta_boxes', array($this, 'est_add_presets_meta_box'));
+
+		add_action('save_post', array($this, 'est_save_fields_meta'));
+		add_action('wp_ajax_est_ajax_fields', array($this, 'est_ajax_fields'));
+		add_action('wp_ajax_nopriv_est_ajax_fields', array($this, 'est_ajax_fields'));
+
 		add_action('save_post', array($this, 'est_save_presets_meta'));
 
 		add_action('wp_ajax_add_save_preset', array($this, 'add_save_preset'));
@@ -37,7 +40,10 @@ class Estimate {
 		add_action('wp_ajax_nopriv_est_table', array($this, 'est_table'));
 
 		add_action('admin_menu', array($this, 'est_menu_page'));
-		add_filter('post_row_actions', array($this, 'post_actions_add_print_link'), 10, 2 );
+
+		if ( isset( $_GET['post_type'] ) && $_GET['post_type'] == 'estimates') {
+  			add_filter('post_row_actions', array($this, 'post_actions_add_print_link'), 10, 2 );
+    	}
 
 		add_action('init', array($this, 'print_estimate'));
 
@@ -55,15 +61,16 @@ class Estimate {
 		wp_enqueue_script('est-js');
 	}
 
+
 	function est_add_post_scripts() {
 		if ( isset($_GET['post'])) {
 			wp_enqueue_style('post-boostrap-css', plugins_url().'/estimate/css/bootstrap.css');
 			wp_enqueue_style('style-post', plugins_url().'/estimate/css/style-post.css');
 			wp_enqueue_script('post-boostrap-js', plugins_url().'/estimate/js/bootstrap.js', array('jquery'), '4.1.3', true);
+			wp_register_script('post-js', plugins_url().'/estimate/js/post-main.js', array('jquery'), '4.1.3', true );
+			wp_localize_script('post-js', 'post_js_object', array('ajax_url' => admin_url('admin-ajax.php')));
+			wp_enqueue_script('post-js');
 		}
-		wp_register_script('post-js', plugins_url().'/estimate/js/post-main.js', array('jquery'), '4.1.3', true );
-		wp_localize_script('post-js', 'post_js_object', array('ajax_url' => admin_url('admin-ajax.php')));
-		wp_enqueue_script('post-js');
 		
 	}
 
@@ -117,6 +124,7 @@ class Estimate {
 			'normal',
 			'default'
 		);
+		
 	}
 
 	function est_fields_callback($post) {
@@ -136,7 +144,7 @@ class Estimate {
 							<?php esc_html_e('Items', 'est_domain') ?>
 					</label>
 				</p>
-				<table class="table table-striped" name="est_items" id="est_items">
+				<table class="table table-striped">
 					<tr> 
 						<td>№</td>
 						<td><?php _e('Title', 'est_domain') ?></td> 
@@ -144,14 +152,16 @@ class Estimate {
 						<td>Cost</td>
 						<td></td>
 					</tr> 
-				<p class="table table-striped" name="est_items" id="est_items"><?php if(!empty($meta['est_items'])) echo $meta['est_items'][0];?></p>
+				<p name="est_items" id="est_items"><?php if(!empty($meta['est_items'])) echo $meta['est_items'][0];?></p>
 				</table>
-				<div class="summary card">
-					<div class="card-body">
-						<h3><?php _e('Summary:', 'est_domain') ?></h3>
-							<p name="est_summary"><?php if(!empty($meta['est_summary'])) echo $meta['est_summary'][0];?></p>
-				</div>
-			</div>
+				
+				<p hidden name="est_change_time" id="est_change_time"><?php if(!empty($meta['est_change_time']))  echo $meta['est_change_time'][0];
+				?></p>
+
+				<h3><?php _e('Summary:', 'est_domain') ?></h3>
+					<ul name="est_summary"><?php if(!empty($meta['est_summary'])) echo $meta['est_summary'][0];?></ul>
+				<p hidden name="time_sum"></p>
+				
 			</div>
 		</div>
 		<?php
@@ -168,16 +178,14 @@ class Estimate {
 
 		if (isset($_POST['est_rate'])) {
 			update_post_meta($post_id, 'est_rate', sanitize_text_field($_POST['est_rate']));
-		}
 
-		if (isset($_POST['est_items'])) {
-			update_post_meta($post_id, 'est_items', sanitize_text_field($_POST['est_items']));
+			update_post_meta($post_id, 'est_summary', '<li><h3 id="estimate_time_sum">'.(float)get_post_meta($post_id, 'time_sum', true).' hours</h3></li><li><h3 id="estimate_money_sum">'.(float)get_post_meta($post_id, 'time_sum', true)*$_POST['est_rate'].' $</h3></li>');	
 		}
+	}
 
-		if (isset($_POST['est_summary'])) {
-			update_post_meta($post_id, 'est_summary', sanitize_text_field($_POST['est_summary']));
-		}
-
+	function est_ajax_fields() {
+		$estPost = get_post($_POST['id'], OBJECT);
+		update_post_meta($estPost->ID, 'est_items', $_POST['est_change_table']);
 	}
 
 	// Create Presets CPT
@@ -325,10 +333,8 @@ class Estimate {
 				<h3><?php _e('Summary:', 'est_domain') ?></h3>
 					<p>
 						<ul>
-							<li>
-								<h3 id="estimate_time_sum"></h3>
-								<h3 id="estimate_money_sum"></h3>
-							</li>
+							<li><h3 id="estimate_time_sum"></h3></li>
+							<li><h3 id="estimate_money_sum"></h3></li>
 						</ul>
 					</p>
 				</div>
@@ -414,11 +420,10 @@ class Estimate {
 				);
 
 				$est_id = wp_insert_post($post_information);
-
 				update_post_meta($est_id, 'est_rate', $_POST['est_rate']);
 				update_post_meta($est_id, 'est_items', $_POST['est_items']);
 				update_post_meta($est_id, 'est_summary', $_POST['est_summary']);
-				
+				update_post_meta($est_id, 'time_sum', $_POST['time_sum']);
 				wp_die();
 			}
 
@@ -442,7 +447,7 @@ class Estimate {
 					<html>
 					<head>
 					<link rel='stylesheet' href='".plugins_url().'/estimate/css/bootstrap.css'."'' type='text/css'/>
-					<link rel='stylesheet' href='".plugins_url().'/estimate/css/style-post.css'."'' type='text/css'/>
+					<link rel='stylesheet' href='".plugins_url().'/estimate/css/style-post-print.css'."'' type='text/css'/>
 					</head>
 					<body>
 					<div class='summary-description'>
