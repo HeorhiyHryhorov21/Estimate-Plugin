@@ -6,6 +6,10 @@
 	border: none;
 }
 
+h4#est_print_title {
+	text-align: center;
+}
+
 .card-body {
 	color: #fafafa;
 	background-color: #23282D;

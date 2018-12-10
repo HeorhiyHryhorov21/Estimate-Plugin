@@ -40,13 +40,19 @@ th[scope="col"] ul li{
 	padding: 0;
 	margin-left: 200px;
 	margin-right: -200px;
-	
+
 }
 input[type="number"] {
 	margin: 0;
 	padding: 0;
 	width: 100px;
 	text-align: center;
+}
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+
+    -webkit-appearance: none;
+    margin: 0;
 }
 .est_success {
 	position: absolute;
@@ -81,13 +87,15 @@ input[type="number"] {
 }   
 
 .modal-dialog {
- 	height: 500px !important;
+ 	height: 510px !important;
 }
 
 input#add {
 	display: none;
 }
-
+.add_new {
+    margin-top: 20px;
+}
 input[type=time] {
 	margin: 0; 
 }

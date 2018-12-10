@@ -25,8 +25,6 @@ class Estimate {
 		add_action('add_meta_boxes', array($this, 'est_add_presets_meta_box'));
 
 		add_action('save_post', array($this, 'est_save_fields_meta'));
-		add_action('wp_ajax_est_ajax_fields', array($this, 'est_ajax_fields'));
-		add_action('wp_ajax_nopriv_est_ajax_fields', array($this, 'est_ajax_fields'));
 
 		add_action('save_post', array($this, 'est_save_presets_meta'));
 
@@ -67,9 +65,7 @@ class Estimate {
 			wp_enqueue_style('post-boostrap-css', plugins_url().'/estimate/css/bootstrap.css');
 			wp_enqueue_style('style-post', plugins_url().'/estimate/css/style-post.css');
 			wp_enqueue_script('post-boostrap-js', plugins_url().'/estimate/js/bootstrap.js', array('jquery'), '4.1.3', true);
-			wp_register_script('post-js', plugins_url().'/estimate/js/post-main.js', array('jquery'), '4.1.3', true );
-			wp_localize_script('post-js', 'post_js_object', array('ajax_url' => admin_url('admin-ajax.php')));
-			wp_enqueue_script('post-js');
+            wp_enqueue_script('post-js', plugins_url().'/estimate/js/post-main.js', array('jquery'), '4.1.3', true);
 		}
 		
 	}
@@ -149,14 +145,50 @@ class Estimate {
 						<td>№</td>
 						<td><?php _e('Title', 'est_domain') ?></td> 
 						<td><?php _e('Time', 'est_domain')?></td>
-						<td>Cost</td>
+						<td><?php _e('Cost', 'est_domain')?></td>
 						<td></td>
 					</tr> 
-				<p name="est_items" id="est_items"><?php if(!empty($meta['est_items'])) echo $meta['est_items'][0];?></p>
+
+				<p name="est_items" id="est_items">
+					<?php
+                    $meta_table = get_post_meta($post->ID, 'est_items', true);
+					if(!empty($meta_table)) 
+						$i = 1;
+						foreach ($meta_table as $key) :
+                            if(is_array($key)) {
+                                $time = explode(':', $key[1]);
+                                $time = $time[0] + floor(($time[1] / 60) * 100) / 100 . PHP_EOL;
+                                ?>
+                                <tr>
+                                    <td><?php echo $i; ?></td>
+                                    <td><?php echo $key[0]; ?></td>
+                                    <td id=<?php echo "time$i"; ?>><?php echo $key[1]; ?></td>
+                                    <td id=<?php echo "cost$i"; ?>><?php echo $time * get_post_meta($post->ID, 'est_rate', true) . ' $'; ?></td>
+                                    <td></td>
+                                </tr>
+                                <?php
+                                ++$i;
+                            } else {
+                                $time = explode(':', get_post_meta($key, 'time', true));
+                                $time = $time[0] + floor(($time[1] / 60) * 100) / 100 . PHP_EOL;
+                                ?>
+                                <tr>
+                                    <td><?php echo $i; ?></td>
+                                    <td><?php echo get_the_title($key); ?></td>
+                                    <td id=<?php echo "time$i"; ?>><?php echo get_post_meta($key, 'time', true); ?></td>
+                                    <td id=<?php echo "cost$i"; ?>><?php echo $time * get_post_meta($post->ID, 'est_rate', true) . ' $'; ?></td>
+                                    <td></td>
+                                </tr>
+                                <?php
+                                ++$i;
+                            }
+						endforeach;
+
+				?>
+					
+				</p>
 				</table>
-				
-				<p hidden name="est_change_time" id="est_change_time"><?php if(!empty($meta['est_change_time']))  echo $meta['est_change_time'][0];
-				?></p>
+
 
 				<h3><?php _e('Summary:', 'est_domain') ?></h3>
 					<ul name="est_summary"><?php if(!empty($meta['est_summary'])) echo $meta['est_summary'][0];?></ul>
@@ -178,14 +210,9 @@ class Estimate {
 
 		if (isset($_POST['est_rate'])) {
 			update_post_meta($post_id, 'est_rate', sanitize_text_field($_POST['est_rate']));
-
+            update_post_meta($post_id, 'est_items', get_post_meta($post_id, 'est_items', true));
 			update_post_meta($post_id, 'est_summary', '<li><h3 id="estimate_time_sum">'.(float)get_post_meta($post_id, 'time_sum', true).' hours</h3></li><li><h3 id="estimate_money_sum">'.(float)get_post_meta($post_id, 'time_sum', true)*$_POST['est_rate'].' $</h3></li>');	
 		}
-	}
-
-	function est_ajax_fields() {
-		$estPost = get_post($_POST['id'], OBJECT);
-		update_post_meta($estPost->ID, 'est_items', $_POST['est_change_table']);
 	}
 
 	// Create Presets CPT
@@ -297,7 +324,7 @@ class Estimate {
 							<?php _e("Estimate: ", 'est_domain') ?>
 						</li>
 						<li>
-								<input type="text" name="est_title" id="est_title" placeholder="Add estimate title">
+								<input type="text" name="est_title" id="est_title" placeholder="<?php __('Add estimate title') ?>">
 						</li>
 					</ul>
 					</th>  
@@ -305,13 +332,13 @@ class Estimate {
 					<ul>
 					<li><?php _e("Rate: ", 'est_domain');?></li>
 						<li>
-							<a href="#" data-toggle="tooltip" data-placement="top" data-template='<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' title="Scroll to add rate in $">
-								<input type="number" min="0" name="rate" id="rate" value="0">
+							<a href="#" data-toggle="tooltip" data-placement="top" data-template='<div class="tooltip" role="tooltip"><div class="arrow"></div><div class="tooltip-inner"></div></div>' title="<?php _e('Press arrow button or write to add rate in $', 'est_domain') ?>">
+								    <input type="number" step="1" min="0" name="rate" id="rate" value="0">
 							</a>
 					</li>
 					</ul>
 					<th scope="col">
-						<button type="button" class="button button-primary" data-toggle="modal" data-target="#add_prst_modal"><?php _e('Add Item', 'est_domain') ?></button>
+						<input type="button" class="button button-primary" data-toggle="modal" data-target="#add_prst_modal" value="<?php _e('Add Item', 'est_domain') ?>" />
 					</th>
 					<th scope="col"></th>
 				</th>
@@ -324,7 +351,7 @@ class Estimate {
 	<tfoot>
 			<tr>
 				<td colspan="3"></td>
-				<td><button type="submit" class="button button-primary" name="crt_est" id="crt_est">Create Estimate</button></td>
+				<td><input type="submit" class="button button-primary" name="crt_est" id="crt_est" value="<?php _e('Create Estimate', 'est_domain') ?>"/></td>
 			</tr>
 	</tfoot>
 </table>	
@@ -355,14 +382,14 @@ class Estimate {
 					        	<div class="form-group est-add">
 					          	<form action="" method="POST">
 					          		<select name="prst_select" id="prst_select">
-					          			<option selected value="0">Add new Preset</option>
+					          			<option selected value="0"><?php _e('Add new Preset', 'est_domain') ?></option>
 					          			 <?php
 					                        $args = array('post_type'=>'presets', 'order' => 'ASC','numberposts' => -1,);
 					                        $postSelect = get_posts( $args );
 					                        foreach ( $postSelect as $post ) :
 					                        $prstData = get_post($post->ID, OBJECT); ?>
 					                            <option><?php echo $prstData->post_title; ?></option>
-					                            <option hidden name="prst_select_time"><?php echo get_post_meta($prstData->ID, 'time', true); ?></option>
+					                            <option hidden name="prst_select_time" data-id="<?php echo $prstData->ID;?>"><?php echo get_post_meta($prstData->ID, 'time', true); ?></option>
 					                        <?php endforeach; 
 					          			?>
 					          		</select><br><br>
@@ -380,7 +407,10 @@ class Estimate {
 							    	</div>
 									<?php wp_nonce_field('est_form', 'est_nonce_field');?>
 									<input type="submit" class="button button-primary" name="add" id="add" value="<?php _e('Add', 'est_domain') ?>">
+                                    <div class="add_new">
 									<input type="submit" class="button button-primary" name="add_save" id="add_save" value="<?php _e('Add and Save', 'est_domain') ?>">
+                                    <input type="submit" class="button button-primary" name="add_custom" id="add_custom" value="<?php _e('Add', 'est_domain') ?>">
+                                    </div>
 					          	</form>
 					          </div>
 					        </div>
@@ -405,12 +435,13 @@ class Estimate {
 				update_post_meta($prst_id, 'time', $_POST['prst_time']);
 
 				$preset = get_post($prst_id, OBJECT);
+				$resp_id = $preset->ID;
 				$resp_title = $preset->post_title;
 				$resp_time = get_post_meta($prst_id, 'time', true);
-				echo json_encode(array($resp_title, $resp_time));
+				echo json_encode(array($resp_title, $resp_time, $resp_id));
 				wp_die();
 			}
-		
+
 
 		function add_estimate() {
 				$post_information = array(
@@ -420,7 +451,8 @@ class Estimate {
 				);
 
 				$est_id = wp_insert_post($post_information);
-				update_post_meta($est_id, 'est_rate', $_POST['est_rate']);
+
+				update_post_meta($est_id, 'est_rate', $_POST['est_rate']);				
 				update_post_meta($est_id, 'est_items', $_POST['est_items']);
 				update_post_meta($est_id, 'est_summary', $_POST['est_summary']);
 				update_post_meta($est_id, 'time_sum', $_POST['time_sum']);
@@ -428,60 +460,88 @@ class Estimate {
 			}
 
 		function post_actions_add_print_link( $actions, $post ) {
-			$actions['print'] = '<a href="post.php?id='.$post->ID.'" id="print_link" name="print_link">'. __("Print") .'</a>';
+			$actions['print'] = '<a href="post.php?id='.$post->ID.'&action=est_print" id="print_link" name="print_link">'. __("Print") .'</a>';
 			return $actions;
 
 		}
 
-		function print_estimate() {
 
-				require_once 'dompdf/autoload.inc.php';
-				$dompdf = new Dompdf();
-				if (isset($_GET['id'])) {
-				$estimate_row = get_post($_GET['id'], OBJECT);
-				$estimate_row_title = $estimate_row->post_title;
-				$estimate_row_time = get_post_meta($estimate_row->ID, 'est_rate', true);
-				$est_row_items = get_post_meta($estimate_row->ID, 'est_items', true);
-				$est_row_summary = get_post_meta($estimate_row->ID, 'est_summary', true);
-				$dompdf->loadHtml("
-					<html>
-					<head>
-					<link rel='stylesheet' href='".plugins_url().'/estimate/css/bootstrap.css'."'' type='text/css'/>
-					<link rel='stylesheet' href='".plugins_url().'/estimate/css/style-post-print.css'."'' type='text/css'/>
-					</head>
-					<body>
-					<div class='summary-description'>
-					<p>Estimate title: ".$estimate_row_title."</p>
-					<p>Rate: ".$estimate_row_time."</p>
-					</div>
-					<table class='table table-striped'>
-					<tr scope='row'>
-						<td>#</td>
-						<td>Title</td>
-						<td>Time</td>
-						<td>Cost</td>
-						<td></td>
-					</tr>".$est_row_items."
-					</table>
-					<div class='summary card'>
-						<div class='card-body'>
-						<div class='summary-display'
-						<ul>
-							<li><h3>Summary: </h3></li>
-									".$est_row_summary."
-								</ul>
-							</div>
-						</div>
-					</div>
-					</body>
-					</html>");
+    function print_estimate() {
+        require_once 'dompdf/autoload.inc.php';
+        $dompdf = new Dompdf();
+        if (isset($_GET['id']) && isset($_GET['action']) && $_GET['action'] == 'est_print') {
+            $estimate_row = get_post($_GET['id'], OBJECT);
+            $meta_table = get_post_meta($estimate_row->ID, 'est_items', true);
+            $estimate_row_title = $estimate_row->post_title;
+            $estimate_row_rate = get_post_meta($estimate_row->ID, 'est_rate', true);
+            $est_row_summary = get_post_meta($estimate_row->ID, 'est_summary', true);
 
-				$dompdf->setPaper('A4', 'landscape');
-
-				$dompdf->render();
-				$dompdf->stream("Estimate-".$estimate_row_title.".pdf");
-			}
-		}
+            if(!empty($meta_table))
+                $i = 1;
+                ob_start(); ?>
+            <html>
+            <head>
+                <link rel='stylesheet' href=<?php echo plugins_url().'/estimate/css/bootstrap.css'; ?> type='text/css'/>
+                <link rel='stylesheet' href=<?php echo plugins_url().'/estimate/css/style-post-print.css'; ?> type='text/css'/>
+            </head>
+            <h4 id="est_print_title"><?php echo _e('Estimate title: ', 'est_domain').$estimate_row_title; ?></h4>
+            <table class='table table-striped'>
+                <tr scope='row'>
+                    <td>#</td>
+                    <td><?php _e('Title', 'est_domain') ?></td>
+                    <td><?php _e('Time', 'est_domain') ?></td>
+                    <td><?php _e('Cost', 'est_domain') ?></td>
+                    <td></td>
+                </tr> <?php
+                foreach ($meta_table as $key) :
+                    if(is_array($key)) {
+                        $time = explode(':', $key[1]);
+                        $time = $time[0] + floor(($time[1] / 60) * 100) / 100 . PHP_EOL;
+                        ?>
+                        <tr>
+                            <td><?php echo $i; ?></td>
+                            <td><?php echo $key[0]; ?></td>
+                            <td id=<?php echo "time$i"; ?>><?php echo $key[1]; ?></td>
+                            <td id=<?php echo "cost$i"; ?>><?php echo $time * $estimate_row_rate . ' $'; ?></td>
+                            <td></td>
+                        </tr>
+                        <?php
+                        ++$i;
+                    } else {
+                        $time = explode(':', get_post_meta($key, 'time', true));
+                        $time = $time[0] + floor(($time[1] / 60) * 100) / 100 . PHP_EOL;
+                        ?>
+                        <tr>
+                            <td><?php echo $i; ?></td>
+                            <td><?php echo get_the_title($key); ?></td>
+                            <td id=<?php echo "time$i"; ?>><?php echo get_post_meta($key, 'time', true); ?></td>
+                            <td id=<?php echo "cost$i"; ?>><?php echo $time * $estimate_row_rate . ' $'; ?></td>
+                            <td></td>
+                        </tr>
+                        <?php
+                        ++$i;
+                    }
+                endforeach;
+                ?>
+            </table>
+            <div class='summary card'>
+                <div class='card-body'>
+                    <ul>
+                        <li><h3><?php _e('Summary: ', 'est_domain') ?></h3></li>
+                        <li><h3><?php echo _e('Rate: ', 'est_domain').$estimate_row_rate; ?></h3></li>
+                        <?php echo $est_row_summary; ?>
+                    </ul>
+            </div>
+            </div>
+            </body>
+            </html>
+            <?php
+            $dompdf->loadHtml(ob_get_clean());
+            $dompdf->setPaper('A4', 'landscape');
+            $dompdf->render();
+            $dompdf->stream(__("Estimate-".$estimate_row_title).".pdf");
+        }
+    }
 }
 
 new Estimate();

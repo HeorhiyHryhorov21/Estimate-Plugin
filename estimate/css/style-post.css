@@ -2,3 +2,17 @@ body {
 	background-color: #F1F1F1;
 }
 
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button {
+
+	-webkit-appearance: none;
+	margin: 0;
+}
+
+.table.table-striped td {
+	width: 30%;
+}
+.table.table-striped td:first-child {
+	width: 10%;
+}
+
