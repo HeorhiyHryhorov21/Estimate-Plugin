@@ -1,8 +1,8 @@
-PHP-Login
+Estimate Plugin
 =========
 **Version 3.1**
 
-`PHP-Login` is a simple login and signup system built with PHP, MySQL (with PDO), jQuery and Bootstrap 3. It is meant to be a starting point for PHP developers to build sites from and includes basic user management classes and methods.
+`Estimate Plugin` is a Wordpress plugin that is meant to be used for time management and keeping records of how much time every task takes or collection of tasks
 
 
 Technologies used:
@@ -15,9 +15,8 @@ Technologies used:
 - `MySQL` *_required_*
 	- Version `5.6+` recommended
 
-- `Composer` *_required_*
-	- Version `1.2.1+` recommended
-	- `mbstring` and `dom` php extensions required
+- `Wordpress` *_required_*
+	- Version `4.0+` recommended
 
 ##### Components loaded via Composer
 - `jQuery`
